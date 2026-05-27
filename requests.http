@@ -1,0 +1,61 @@
+# ── AUTH ──────────────────────────────────────────────
+
+### Register
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "name": "John Doe"
+}
+
+### Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+### Me (paste your token below)
+GET http://localhost:3000/api/auth/me
+Authorization: Bearer PASTE_TOKEN_HERE
+
+
+# ── SUPPLIERS ─────────────────────────────────────────
+
+### List All
+GET http://localhost:3000/api/suppliers
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Get One
+GET http://localhost:3000/api/suppliers/1
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Create
+POST http://localhost:3000/api/suppliers
+Content-Type: application/json
+Authorization: Bearer PASTE_TOKEN_HERE
+
+{
+  "name": "My Supplier",
+  "contactEmail": "supplier@example.com",
+  "phone": "555-1234",
+  "address": "123 Main St"
+}
+
+### Update
+PUT http://localhost:3000/api/suppliers/1
+Content-Type: application/json
+Authorization: Bearer PASTE_TOKEN_HERE
+
+{
+  "name": "Updated Name",
+  "phone": "555-9999"
+}
+
+### Delete
+DELETE http://localhost:3000/api/suppliers/1
+Authorization: Bearer PASTE_TOKEN_HERE

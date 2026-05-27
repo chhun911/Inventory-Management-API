@@ -1,0 +1,80 @@
+name: CI – Test Suite
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        id: unit_tests
+        run: npm test -- --forceExit
+
+      - name: Run E2E tests
+        id: e2e_tests
+        run: npm run test:e2e
+
+      - name: Resolve committer email
+        if: always()
+        id: committer
+        run: |
+          EMAIL=$(git log -1 --format='%ae')
+          # Fall back to the pusher email if the commit email is empty or a GitHub noreply
+          if [ -z "$EMAIL" ] || echo "$EMAIL" | grep -q "noreply.github.com"; then
+            EMAIL="${{ github.event.pusher.email }}"
+          fi
+          echo "email=$EMAIL" >> $GITHUB_OUTPUT
+
+      - name: Build status label
+        if: always()
+        id: status
+        run: |
+          UNIT="${{ steps.unit_tests.outcome }}"
+          E2E="${{ steps.e2e_tests.outcome }}"
+          if [ "$UNIT" = "success" ] && [ "$E2E" = "success" ]; then
+            echo "label=PASSED ✅" >> $GITHUB_OUTPUT
+          else
+            echo "label=FAILED ❌" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send notification email
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          to: ${{ steps.committer.outputs.email }},srengty@gmail.com
+          from: Inventory API CI <${{ secrets.MAIL_USERNAME }}>
+          subject: "CI ${{ steps.status.outputs.label }} – ${{ github.repository }} @ ${{ github.sha }}"
+          body: |
+            Automated test suite result for commit ${{ github.sha }}
+
+            Repository : ${{ github.repository }}
+            Branch     : ${{ github.ref_name }}
+            Commit     : ${{ github.sha }}
+            Author     : ${{ github.actor }}
+            Status     : ${{ steps.status.outputs.label }}
+
+            Unit tests : ${{ steps.unit_tests.outcome }}
+            E2E tests  : ${{ steps.e2e_tests.outcome }}
+
+            View run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
